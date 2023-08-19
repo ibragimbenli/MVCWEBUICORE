@@ -1,32 +1,32 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MVCWEBUI.Models;
-using System.Diagnostics;
+using System.Text.Json;
 
 namespace MVCWEBUI.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            _logger = logger;
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri("http://localhost:5027/api");
+            var response = await client.GetAsync($"{client.BaseAddress}/Category");
+            var responseRead = await response.Content.ReadAsStringAsync();
+            var resultCt = JsonSerializer.Deserialize<ResponseComing<CategoryItem>>(responseRead);
+
+            var responsePr = await client.GetAsync($"{client.BaseAddress}/Products");
+            var responseReadPr = await responsePr.Content.ReadAsStringAsync();
+            var resultPr = JsonSerializer.Deserialize<ResponseComing<ProductItem>>(responseReadPr);
+
+            var categorylist = resultCt.data;
+            var productList = resultPr.data;
+
+            HomeIndexViewModel viewModel = new HomeIndexViewModel();
+            viewModel.ProductList = productList;
+            viewModel.CategoryList = categorylist;
+            return View(viewModel);
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
     }
 }
